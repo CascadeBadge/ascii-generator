@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCII — art generator · v1</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>ascii<span class="pink">.</span>generator</h1>
+    <p class="sub">v1 · black first, pink + white only · 120 frames · 6 s perfect loop</p>
+  </div>
+  <div class="top-controls">
+    <label class="word-label">word
+      <input id="wordInput" type="text" value="xaziss" maxlength="12" spellcheck="false" autocomplete="off">
+    </label>
+    <button id="playPauseBtn" type="button" class="btn">pause</button>
+    <div class="view-toggle" role="group" aria-label="view">
+      <button id="viewCanvasBtn" type="button" class="btn active">canvas</button>
+      <button id="viewTextBtn" type="button" class="btn">text</button>
+    </div>
+    <span id="frameReadout" class="readout">frame 0 / 120</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <section>
+      <h2>converter</h2>
+      <p class="hint">Upload a GIF / image. Same math as <code>gif_to_ascii.py</code>.</p>
+      <button type="button" class="mode-btn" data-mode="converter">image → ascii</button>
+      <div class="drop" id="dropZone">
+        <p>drop a GIF or image here</p>
+        <p class="hint">or <label class="file-label">choose a file<input id="fileInput" type="file" accept="image/*,.gif"></label></p>
+        <p id="uploadStatus" class="hint">demo image loaded — no upload yet</p>
+      </div>
+      <div class="field-row">
+        <label><input type="checkbox" id="fitToggle" checked> fit whole image <span class="hint">(--fit)</span></label>
+        <label><input type="checkbox" id="keyGreenToggle"> key green <span class="hint">(--key-green)</span></label>
+        <label><input type="checkbox" id="trimGreenToggle"> trim green <span class="hint">(--trim-green)</span></label>
+        <label><input type="checkbox" id="boldToggle"> bold glyphs <span class="hint">(--bold)</span></label>
+        <label><input type="checkbox" id="monoToggle"> mono / white <span class="hint">(--mono)</span></label>
+      </div>
+      <button id="demoBtn" type="button" class="btn small">reload demo image</button>
+    </section>
+
+    <section>
+      <h2>bases</h2>
+      <p class="hint">Abstract background layers. Pick one, or pick one under a motion.</p>
+      <div class="mode-grid">
+        <button type="button" class="mode-btn active" data-mode="wave">wave</button>
+        <button type="button" class="mode-btn" data-mode="ripples">ripples</button>
+        <button type="button" class="mode-btn" data-mode="spiral">spiral</button>
+        <button type="button" class="mode-btn" data-mode="rain">rain</button>
+        <button type="button" class="mode-btn" data-mode="rain-tips">rain · tips spell xaziss</button>
+        <button type="button" class="mode-btn" data-mode="starfield">starfield</button>
+        <button type="button" class="mode-btn" data-mode="pulsing">pulsing rings</button>
+      </div>
+      <label class="field">base under motion
+        <select id="motionBaseSelect">
+          <option value="wave" selected>wave</option>
+          <option value="ripples">ripples</option>
+          <option value="spiral">spiral</option>
+          <option value="rain">rain</option>
+          <option value="rain-tips">rain · tips</option>
+          <option value="starfield">starfield</option>
+          <option value="pulsing">pulsing rings</option>
+          <option value="none">none (black)</option>
+        </select>
+      </label>
+    </section>
+
+    <section>
+      <h2>motions</h2>
+      <p class="hint">The letters ARE the effect. Word comes from the box up top.</p>
+      <div class="mode-grid">
+        <button type="button" class="mode-btn" data-mode="orbit">orbit v3</button>
+        <button type="button" class="mode-btn" data-mode="explode">explode</button>
+        <button type="button" class="mode-btn" data-mode="spin3d">spin 3d</button>
+        <button type="button" class="mode-btn" data-mode="rspin">r-spin</button>
+      </div>
+      <label class="field-row"><input type="checkbox" id="burstToggle" checked> letter bursts <span class="hint">(orbit + explode)</span></label>
+    </section>
+
+    <section>
+      <h2>controls</h2>
+      <label class="slider">cols / chunk size <span class="val" id="colsVal">80</span>
+        <input id="colsSlider" type="range" min="20" max="200" step="1" value="80">
+      </label>
+      <label class="slider">font size <span class="val" id="fontVal">28</span>
+        <input id="fontSlider" type="range" min="8" max="40" step="1" value="28">
+        <span class="hint">auto-fits the cell when cols / canvas change</span>
+      </label>
+      <label class="slider">gamma <span class="val" id="gammaVal">0.75</span>
+        <input id="gammaSlider" type="range" min="0.30" max="1.50" step="0.05" value="0.75">
+      </label>
+      <label class="slider">floor <span class="val" id="floorVal">0</span>
+        <input id="floorSlider" type="range" min="0" max="255" step="1" value="0">
+        <span class="hint">pixels dimmer than this go black before tonemapping</span>
+      </label>
+      <label class="slider">fps / speed <span class="val" id="fpsVal">20</span>
+        <input id="fpsSlider" type="range" min="5" max="30" step="1" value="20">
+        <span class="hint" id="loopHint">120 frames · 6.0 s loop</span>
+      </label>
+      <label class="slider">sparkles <span class="val" id="sparkleVal">28</span>
+        <input id="sparkleSlider" type="range" min="0" max="84" step="28" value="28">
+        <span class="hint">28 original · 56 double · 84 triple</span>
+      </label>
+      <label class="slider">explosion distance <span class="val" id="explodeVal">220 px</span>
+        <input id="explodeSlider" type="range" min="80" max="220" step="1" value="220">
+        <span class="hint">cells fly 80–220 px in the Python version; this sets the max</span>
+      </label>
+      <label class="slider">glyph re-roll <span class="val" id="rerollVal">10 / sec</span>
+        <input id="rerollSlider" type="range" min="1" max="20" step="1" value="10">
+        <span class="hint">rain, sparkles, explode + spin cells. Orbit v3 back letters change every frame by design.</span>
+      </label>
+    </section>
+
+    <section>
+      <h2>canvas</h2>
+      <div class="mode-grid">
+        <button type="button" class="preset-btn active" data-w="1360" data-h="480">discord profile · 1360×480</button>
+        <button type="button" class="preset-btn" data-w="680" data-h="240">discord display · 680×240</button>
+        <button type="button" class="preset-btn" data-w="960" data-h="540">server · 960×540</button>
+        <button type="button" class="preset-btn" data-w="960" data-h="960">square · 960×960</button>
+      </div>
+      <div class="field-row inline">
+        <label>custom <input id="customW" type="number" min="160" max="2400" value="1360"> × <input id="customH" type="number" min="120" max="2400" value="480"></label>
+        <button id="customApplyBtn" type="button" class="btn small">apply</button>
+      </div>
+      <label class="field-row"><input type="checkbox" id="fullBleedToggle"> full-bleed <span class="hint">canvas fills the stage instead of a fixed size</span></label>
+      <p class="hint" id="canvasReadout">canvas 1360 × 480 · grid 80 × 14</p>
+    </section>
+
+    <section>
+      <h2>palette</h2>
+      <p class="hint">House palette by default. Upload colours are quantized to 8 clusters — remap any swatch and the converter follows it.</p>
+      <label class="field">base colour <input id="baseColor" type="color" value="#ff6ec8"></label>
+      <label class="field">sparkle colour <input id="sparkleColor" type="color" value="#ff6ec8"></label>
+      <label class="field">burst colour <input id="burstColor" type="color" value="#ffffff"></label>
+      <label class="field-row"><input type="checkbox" id="lockWhiteToggle" checked> lock letters white</label>
+      <label class="field">letter colour <input id="letterColor" type="color" value="#ffffff" disabled></label>
+      <div id="uploadPalette" class="swatches"></div>
+      <p class="hint" id="paletteStatus">No upload palette yet — the demo image palette is below once converted.</p>
+      <button id="resetPaletteBtn" type="button" class="btn small">reset palette</button>
+    </section>
+
+    <section>
+      <h2>export · v1</h2>
+      <div class="export-row">
+        <button id="copyTextBtn" type="button" class="btn">copy ascii text</button>
+        <button id="pngBtn" type="button" class="btn">download png</button>
+        <button id="htmlBtn" type="button" class="btn">download html</button>
+        <button id="gifBtn" type="button" class="btn" disabled>download gif <span class="v2">v2</span></button>
+      </div>
+      <p class="hint">Exports are the current frame. GIF export is deferred to v2 — see README.</p>
+      <p class="hint" id="exportStatus"></p>
+    </section>
+  </aside>
+
+  <main class="stage-wrap">
+    <div class="stage" id="stage">
+      <canvas id="stageCanvas" width="1360" height="480"></canvas>
+      <pre id="textView" class="text-view" hidden></pre>
+      <div id="dropOverlay" class="drop-overlay" hidden>drop to convert</div>
+    </div>
+    <div class="statusbar">
+      <span id="statusMode">mode: wave</span>
+      <span id="statusGrid">grid 80 × 14</span>
+      <span id="statusGif">gif: —</span>
+      <span id="statusMsg"></span>
+    </div>
+    <section class="formula">
+      <h2>how this formula works</h2>
+      <p id="formulaText"></p>
+    </section>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
